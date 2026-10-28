@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { serifSubsets } from './font-subset.mjs';
 
 const root = new URL('../', import.meta.url);
 const read = file => readFileSync(new URL(file, root), 'utf8');
@@ -40,16 +41,17 @@ const schema = `<script type="application/ld+json">\n${JSON.stringify(graph, nul
 html = html.replace(/^[ \t]*<script type="application\/ld\+json">[\s\S]*?<\/script>\s*/gm, '');
 html = html.replace('</head>', `  ${schema}\n</head>`);
 
-// Include authored content and UI messages, plus ASCII for dates and typed form values.
-const fontSource = html.replace(/<!-- FONT_LINKS_START -->[\s\S]*?<!-- FONT_LINKS_END -->/, '') + read('js/data.js') + read('js/main.js') + read('css/style.css');
-const text = [...new Set([...fontSource].filter(char => char.codePointAt(0) > 127).concat(Array.from({ length: 95 }, (_, i) => String.fromCharCode(i + 32))))].sort().join('');
-const families = 'family=Noto+Sans+TC:wght@400;500&family=Noto+Serif+TC:wght@400;500';
-const noto = `https://fonts.googleapis.com/css2?${families}&display=swap&text=${encodeURIComponent(text)}`;
+const subsets = serifSubsets(html, data, read('js/main.js'));
+const noto = Object.entries(subsets).map(([weight, text]) => `https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@${weight}&display=swap&text=${encodeURIComponent(text)}`);
 const script = `https://fonts.googleapis.com/css2?family=Allura&display=swap&text=${encodeURIComponent('Taiwan B.Cart')}`;
-const links = [noto, script].map(url => {
+const links = [...noto, script].map(url => {
   const escaped = url.replaceAll('&', '&amp;');
   return `  <link rel="preload" as="style" href="${escaped}" onload="this.onload=null;this.rel='stylesheet'">\n  <noscript><link rel="stylesheet" href="${escaped}"></noscript>`;
 }).join('\n');
 html = html.replace(/<!-- FONT_LINKS_START -->[\s\S]*?<!-- FONT_LINKS_END -->/, `<!-- FONT_LINKS_START -->\n${links}\n  <!-- FONT_LINKS_END -->`);
+const styles = `<!-- SITE_CSS_START -->\n  <style id="site-css">${read('css/style.css').trim()}</style>\n  <!-- SITE_CSS_END -->`;
+html = html.includes('<!-- SITE_CSS_START -->')
+  ? html.replace(/<!-- SITE_CSS_START -->[\s\S]*?<!-- SITE_CSS_END -->/, styles)
+  : html.replace('<link rel="stylesheet" href="css/style.css">', styles);
 writeFileSync(new URL('index.html', root), html);
-console.log(`Static schema: ${data.services.length} services, ${data.faq.length} FAQs; font subset: ${text.length} characters.`);
+console.log(`Static schema: ${data.services.length} services, ${data.faq.length} FAQs; serif glyphs: ${Object.entries(subsets).map(([weight, text]) => `${weight}=${[...text].length}`).join(', ')}.`);

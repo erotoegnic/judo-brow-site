@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import vm from 'node:vm';
+import { serifSubsets } from '../tools/font-subset.mjs';
 
 const root = new URL('../', import.meta.url);
 const html = readFileSync(new URL('index.html', root), 'utf8');
@@ -74,13 +75,40 @@ test('hero preload candidates match picture and scripts remain deferred', () => 
   assert.ok(!html.includes('teacher-original.jpg'));
 });
 
-test('fonts swap immediately and subset covers authored non-ASCII characters', () => {
+test('serif subsets match styled content and no sans webfont is downloaded', () => {
   const links = [...html.matchAll(/<link rel="preload" as="style" href="([^"]+)"/g)].map(match => new URL(match[1].replaceAll('&amp;', '&')));
-  assert.equal(links.length, 2);
+  assert.equal(links.length, 3);
   for (const url of links) assert.equal(url.searchParams.get('display'), 'swap');
-  const noto = links.find(url => url.searchParams.getAll('family').some(family => family.startsWith('Noto')));
-  const subset = new Set(noto.searchParams.get('text'));
-  const source = html.replace(/<!-- FONT_LINKS_START -->[\s\S]*?<!-- FONT_LINKS_END -->/, '') + ['js/data.js', 'js/main.js', 'css/style.css'].map(file => readFileSync(new URL(file, root), 'utf8')).join('');
-  for (const char of source) if (char.codePointAt(0) > 127) assert.ok(subset.has(char), `Run node tools/build.mjs: missing ${char}`);
+  const main = readFileSync(new URL('js/main.js', root), 'utf8');
+  const subsets = serifSubsets(html, data, main);
+  for (const [weight, text] of Object.entries(subsets)) {
+    const font = links.find(url => url.searchParams.get('family') === `Noto Serif TC:wght@${weight}`);
+    assert.ok(font, `Missing serif weight ${weight}`);
+    assert.equal(font.searchParams.get('text'), text, 'Run node tools/build.mjs');
+    assert.ok(text.includes(' '), 'Space preserves font baseline metrics');
+  }
+  assert.ok(links.every(url => !url.href.includes('Sans')));
   assert.equal(links.find(url => url.searchParams.get('family') === 'Allura').searchParams.get('text'), 'Taiwan B.Cart');
+});
+
+test('serif extraction follows data changes without including body copy', () => {
+  const main = readFileSync(new URL('js/main.js', root), 'utf8');
+  const changed = structuredClone(data);
+  changed.services[0].name += '龜';
+  changed.services[0].description += '麤';
+  changed.faq[0].question += '鸞';
+  changed.faq[0].answer += '鬱';
+  const result = serifSubsets(html, changed, main);
+  assert.ok(result[500].includes('龜'));
+  assert.ok(result[400].includes('鸞'));
+  assert.ok(!result[400].includes('麤') && !result[500].includes('麤'));
+  assert.ok(!result[400].includes('鬱') && !result[500].includes('鬱'));
+  for (const text of ['預約訊息已複製', '預約訊息已產生']) {
+    for (const char of text) assert.ok(result[500].includes(char), `Missing confirmation glyph ${char}`);
+  }
+});
+
+test('inline CSS exactly matches its editable source without a blocking stylesheet', () => {
+  assert.equal(html.match(/<style id="site-css">([\s\S]*?)<\/style>/)[1], readFileSync(new URL('css/style.css', root), 'utf8').trim());
+  assert.ok(!html.includes('href="css/style.css"'));
 });

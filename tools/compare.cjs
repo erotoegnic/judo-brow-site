@@ -7,7 +7,7 @@ async function main() {
     const page = await browser.newPage();
     const results = [];
     for (const width of [390, 1280]) {
-      const files = ['before', 'after'].map(stage => path.resolve(__dirname, `../_screens/hero-${stage}-${width}.png`));
+      const files = [process.argv[2] || 'before', process.argv[3] || 'after'].map(stage => path.resolve(__dirname, `../_screens/hero-${stage}-${width}.png`));
       const sources = files.map(file => `data:image/png;base64,${fs.readFileSync(file).toString('base64')}`);
       const result = await page.evaluate(async sources => {
         const images = await Promise.all(sources.map(async source => { const image = new Image(); image.src = source; await image.decode(); return image; }));
@@ -25,7 +25,7 @@ async function main() {
       }, sources);
       results.push({ files, ...result });
     }
-    fs.writeFileSync(path.resolve(__dirname, '../_screens/hero-comparison.json'), JSON.stringify(results, null, 2));
+    fs.writeFileSync(path.resolve(__dirname, `../_screens/hero-comparison-${process.argv[3] || 'after'}.json`), JSON.stringify(results, null, 2));
     console.log(JSON.stringify(results));
   } finally { await browser.close(); }
 }

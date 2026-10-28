@@ -33,6 +33,27 @@ module.exports = async function runBrowserQA(browser, url) {
   assert.equal(await page.locator('script[type="application/ld+json"]').count(), 1);
   assert.deepEqual(await page.locator('#faq details').evaluateAll(items => items.map(item => ({ question: item.querySelector('summary').textContent, answer: item.querySelector('p').textContent }))), content.faq);
   assert.equal(await page.locator('h1').textContent(), '橘豆Judo｜高雄前金區半永久紋繡');
+  async function assertSerifCoverage() {
+  const missingSerif = await page.evaluate(() => {
+    const subsets = new Map([...document.querySelectorAll('link[as="style"]')].map(link => new URL(link.href))
+      .filter(url => url.searchParams.get('family')?.startsWith('Noto Serif TC:'))
+      .map(url => [url.searchParams.get('family').split('@')[1], new Set(url.searchParams.get('text'))]));
+    const missing = [];
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+      const node = walker.currentNode;
+      const parent = node.parentElement;
+      if (parent.closest('.sr-only')) continue;
+      const style = getComputedStyle(parent);
+      if (!style.fontFamily.includes('Noto Serif TC')) continue;
+      const subset = subsets.get(style.fontWeight);
+      for (const character of node.textContent) if (!/\s/u.test(character) && !subset?.has(character)) missing.push({ text: node.textContent, character, weight: style.fontWeight });
+    }
+    return missing;
+  });
+  assert.deepEqual(missingSerif, [], 'Every actually serif-styled text node must be covered');
+  }
+  await assertSerifCoverage();
   const heroRequests = await page.evaluate(() => ({
     current: document.querySelector('.teacher-portrait img').currentSrc,
     requests: performance.getEntriesByType('resource').filter(entry => /\/assets\/teacher(?:-600)?\.(?:webp|jpg)$/.test(entry.name)).map(entry => entry.name),
@@ -130,6 +151,7 @@ module.exports = async function runBrowserQA(browser, url) {
   await page.locator('[type="submit"]').click();
   await page.locator('#booking-confirmation').waitFor({ state: 'visible' });
   assert.equal(await page.locator('#confirmation-title').textContent(), '預約訊息已產生');
+  await assertSerifCoverage();
   await page.locator('#copy-message').click();
   assert.match(await page.locator('#copy-status').textContent(), /手動複製/);
   await page.goto(require("node:url").pathToFileURL(require("node:path").resolve("index.html")).href);

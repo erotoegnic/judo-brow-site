@@ -41,6 +41,8 @@ async function main() {
     const result = await lighthouse(url, { port: 9231, output: 'json', logLevel: 'error' }, { extends: 'lighthouse:default', settings: { onlyCategories: ['performance', 'accessibility', 'best-practices', 'seo'], formFactor: 'mobile', screenEmulation: { mobile: true, width: 390, height: 844, deviceScaleFactor: 1, disabled: false } } });
     fs.writeFileSync(path.join(root, `_screens/lighthouse-${stage}.json`), JSON.stringify(result.lhr));
     const summary = { stage, scores: Object.fromEntries(Object.entries(result.lhr.categories).map(([key, value]) => [key, Math.round(value.score * 100)])), metrics: Object.fromEntries(['first-contentful-paint', 'largest-contentful-paint', 'cumulative-layout-shift', 'total-blocking-time', 'total-byte-weight'].map(key => [key, result.lhr.audits[key].displayValue])), errors };
+    summary.fonts = result.lhr.audits['network-requests'].details.items.filter(item => item.resourceType === 'Font').map(item => ({ url: item.url, bytes: item.transferSize }));
+    summary.fontBytes = summary.fonts.reduce((sum, font) => sum + font.bytes, 0);
     fs.writeFileSync(path.join(root, `_screens/summary-${stage}.json`), JSON.stringify(summary, null, 2));
     console.log(JSON.stringify(summary));
   } finally { await browser.close(); server.close(); }

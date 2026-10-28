@@ -65,8 +65,8 @@ node --test tests/booking.test.mjs
 
 ## SEO 與圖片／字型維護
 
-- 執行 `node tools/build.mjs` 產生靜態結構化資料與 Google Fonts 用字子集；無 npm 依賴。修改 HTML、CSS 或 js/data.js、js/main.js 後重跑，測試會檢查用字是否齊全。
-- 字型仍為 Noto Serif TC／Noto Sans TC 400、500 與 Allura；preload stylesheet、display=swap 與系統字型備援讓文字先出現。子集涵蓋本站固定文案、互動訊息及 ASCII；使用者輸入子集外的姓名字元由系統字型顯示。
+- 執行 `node tools/build.mjs` 產生靜態結構化資料與 Google Fonts 用字子集；無 npm 依賴。修改 HTML、CSS 或 js/data.js、js/main.js 後重跑，測試會檢查子集 URL 與原始內容是否同步。tools/font-subset.mjs 的元素清單對應 style.css 襯線選擇器；新增襯線元件時須一併更新此清單。瀏覽器 QA 依實際 computed style 檢查用字，包括剪貼簿拒絕後的確認標題。
+- 內文／表單使用系統 sans，不下載 Noto Sans TC。Noto Serif TC 保留 400（品牌副標、引言、FAQ）與 500（標題），依實際襯線元素分字重收錄；Allura 只含 Taiwan B.Cart。保持 display=swap 與系統備援。
 - `node tools/images.cjs` 使用已安裝 Chromium 產生 320px 與原尺寸 WebP（品質 78）。原圖有 360／361／640px 寬，不放大低解析來源；維持原長寬比例與頁面方形裁切。
 - `node tools/og/render.cjs` 仍可重製 OG 圖，來源已改為 `_design/teacher-original.jpg`。
 - `node --test tests/*.test.mjs` 驗證預約、內容、JSON-LD、FAQ、字型覆蓋與 hero preload。
@@ -82,3 +82,11 @@ GitHub Pages 的 Jekyll 排除設定已放在 `_config.yml`。其他靜態上傳
 - `assets/teacher-original.jpg` → `_design/teacher-original.jpg`
 
 robots.txt 按要求放在專案根目錄；GitHub Pages 專案子路徑的 robots.txt 不會取代網域根目錄 /robots.txt，搜尋引擎以網域根目錄規則為準。sitemap.xml 可直接提交完整網址。
+
+### 字型第二輪（2026-10-28）
+
+- CSS 保持來源 css/style.css，由 build 工具原樣嵌入首頁，移除首頁阻塞 CSS 請求；gzip 約 5.7 KB。
+- 實測字型傳輸共 75,070 bytes：Serif 400 為 31,034、Serif 500 為 40,706、Allura 為 3,330；Google Fonts 回應大小可能隨服務更新改變。
+- 本機 Lighthouse 98／100／100／100，FCP／LCP 約 1.9 秒；不是線上分數，也不代表 GitHub Pages 已達90。
+- 畫面比較：node tools/compare.cjs fonts-before fonts-after；產物 _screens/hero-comparison-fonts-after.json。
+- 未執行 git 或部署。部署後仍需以相同線上 mobile Lighthouse 設定驗證。
