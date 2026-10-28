@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://erotoegnic.github.io/judo-brow-site/sitemap.xml

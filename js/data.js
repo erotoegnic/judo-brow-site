@@ -10,7 +10,7 @@ window.SITE_DATA = {
     depositRule: '訂金規則：待確認，請洽官方 LINE',
     touchupRule: '補色規則：待確認，請洽官方 LINE',
     rulesPending: true,
-    siteUrl: null
+    siteUrl: 'https://erotoegnic.github.io/judo-brow-site/'
   },
   services: [
     { id: 'soft-brow', name: '機器霧眉 / 自然系霧眉', category: 'brow', description: '以柔和的霧感，描繪自然眉型。', price: null },
@@ -63,15 +63,15 @@ window.SITE_DATA = {
     { quote: '想要每天起床就有精神', attribution: '機器霧眉客人（客人的期望）' }
   ],
   cases: [
-    { id: 'case01', image: 'assets/cases/case01.jpg', path: 'p/De6akNViafB', title: '機器霧眉｜自然柔和眉型', category: 'brow', tags: ['brow'], alt: '橘豆機器霧眉案例，自然柔和眉型作品照片' },
-    { id: 'case02', image: 'assets/cases/case02.jpg', path: 'p/De1DS4_iH7u', title: '眉眼唇整體｜韓系霧唇', category: 'lip', tags: ['lip', 'brow'], alt: '橘豆眉眼唇整體設計與韓系霧唇案例照片' },
-    { id: 'case03', image: 'assets/cases/case03.jpg', path: 'reel/DevkS8VxKPi', title: '唇峰設計', category: 'lip', tags: ['lip'], alt: '橘豆唇峰輪廓設計案例照片' },
-    { id: 'case04', image: 'assets/cases/case04.jpg', path: 'reel/DemIPXNCohJ', title: '暗沉唇選色', category: 'lip', tags: ['lip'], alt: '橘豆暗沉唇選色案例照片' },
-    { id: 'case05', image: 'assets/cases/case05.jpg', path: 'reel/DeCGu7mi2zP', title: '紋唇｜素顏也有氣色', category: 'lip', tags: ['lip'], alt: '橘豆紋唇作品，素顏唇色案例照片' },
-    { id: 'case06', image: 'assets/cases/case06.jpg', path: 'p/Dd-liNKEVZB', title: '深唇矯正', category: 'lip', tags: ['lip'], alt: '橘豆深唇底色矯正案例照片' },
-    { id: 'case07', image: 'assets/cases/case07.jpg', path: 'p/DdTAuqakYWC', title: '霧唇｜沒擦口紅也有氣色', category: 'lip', tags: ['lip'], alt: '橘豆霧唇作品，未上口紅的唇色案例照片' },
-    { id: 'case08', image: 'assets/cases/case08.jpg', path: 'p/DdB36wtFNrU', title: '男士霧眉', category: 'brow', tags: ['brow'], alt: '橘豆男士霧眉案例，保留原本眉型與毛流' },
-    { id: 'case09', image: 'assets/cases/case09.jpg', path: 'reel/DdAqPr2i93x', title: '霧唇術後護理', category: 'lip', tags: ['lip'], alt: '橘豆霧唇術後護理分享照片' }
+    { id: 'case01', image: 'assets/cases/case01.jpg', width: 640, height: 639, path: 'p/De6akNViafB', title: '機器霧眉｜自然柔和眉型', category: 'brow', tags: ['brow'], alt: '高雄前金區 橘豆機器霧眉作品｜自然柔和眉型' },
+    { id: 'case02', image: 'assets/cases/case02.jpg', width: 640, height: 640, path: 'p/De1DS4_iH7u', title: '眉眼唇整體｜韓系霧唇', category: 'lip', tags: ['lip', 'brow'], alt: '高雄前金區 橘豆眉眼唇整體設計｜韓系霧唇作品' },
+    { id: 'case03', image: 'assets/cases/case03.jpg', width: 360, height: 640, path: 'reel/DevkS8VxKPi', title: '唇峰設計', category: 'lip', tags: ['lip'], alt: '高雄霧唇作品｜橘豆唇峰設計' },
+    { id: 'case04', image: 'assets/cases/case04.jpg', width: 360, height: 640, path: 'reel/DemIPXNCohJ', title: '暗沉唇選色', category: 'lip', tags: ['lip'], alt: '高雄前金區 橘豆暗沉唇選色案例' },
+    { id: 'case05', image: 'assets/cases/case05.jpg', width: 360, height: 640, path: 'reel/DeCGu7mi2zP', title: '紋唇｜素顏也有氣色', category: 'lip', tags: ['lip'], alt: '高雄橘豆紋唇作品｜素顏唇色' },
+    { id: 'case06', image: 'assets/cases/case06.jpg', width: 640, height: 640, path: 'p/Dd-liNKEVZB', title: '深唇矯正', category: 'lip', tags: ['lip'], alt: '高雄前金區 橘豆深唇矯正案例' },
+    { id: 'case07', image: 'assets/cases/case07.jpg', width: 640, height: 640, path: 'p/DdTAuqakYWC', title: '霧唇｜沒擦口紅也有氣色', category: 'lip', tags: ['lip'], alt: '高雄橘豆霧唇作品｜未擦口紅的唇色' },
+    { id: 'case08', image: 'assets/cases/case08.jpg', width: 640, height: 640, path: 'p/DdB36wtFNrU', title: '男士霧眉', category: 'brow', tags: ['brow'], alt: '男士霧眉作品｜高雄前金區橘豆，保留原本眉型與毛流' },
+    { id: 'case09', image: 'assets/cases/case09.jpg', width: 361, height: 640, path: 'reel/DdAqPr2i93x', title: '霧唇術後護理', category: 'lip', tags: ['lip'], alt: '高雄橘豆霧唇術後護理分享照片' }
   ],
   faq: [
     { question: '如何預約？', answer: '填寫下方預約表單後，將產生的訊息透過官方 LINE 傳送。官方 LINE 確認時段後，預約才算完成。' },

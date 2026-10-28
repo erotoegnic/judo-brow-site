@@ -1,6 +1,6 @@
 # 橘豆Judo｜半永久美學
 
-純 HTML、CSS、JavaScript 單頁預約網站，無建置步驟、無後端、無套件依賴。直接開啟 `index.html` 即可使用。Google Fonts 與 Google 地圖需網路，離線時使用系統字型。未設定正式網域、未部署。
+純 HTML、CSS、JavaScript 單頁預約網站，無後端、前端無套件依賴。直接開啟 `index.html` 即可使用。Google Fonts 與 Google 地圖需網路，離線時使用系統字型。正式網址設定為 https://erotoegnic.github.io/judo-brow-site/；本次只修改本機檔案，未部署。
 
 ## 本機預覽與測試
 
@@ -20,7 +20,7 @@ node --test tests/booking.test.mjs
 
 ## 修改資料
 
-服務、案例、影片、FAQ、預約注意事項、健康告知選項、客人回饋與聯絡設定集中於 `js/data.js` 的 `window.SITE_DATA`。修改後重新整理頁面即可。字串須保留引號，陣列項目以逗號分隔。
+服務、案例、影片、FAQ、預約注意事項、健康告知選項、客人回饋與聯絡設定集中於 `js/data.js` 的 `window.SITE_DATA`。修改後先執行 `node tools/build.mjs`，同步靜態 JSON-LD 與字型子集，再重新整理頁面。字串須保留引號，陣列項目以逗號分隔。
 
 - `services`：每筆含 `id`（唯一且穩定）、`name`、`category`、`description`、`price`，另可加 `priceNote`（價格旁的補充說明）。分類可為 `brow`、`lip`、`eye`、`scalp`、`course`。表單選單與服務卡同步更新。
 - `price: null` 顯示「價格請洽官方 LINE」。目前唯一已確認價格是修眉：`price: "NT$150", priceNote: "一人一針｜預約制"`。其他項目均維持 `null`，不可用示範價格替代。
@@ -40,8 +40,8 @@ node --test tests/booking.test.mjs
 2. 訂金／補色：更新 `depositRule`、`touchupRule`；兩者均經商家確認後才將 `rulesPending` 改為 `false`，移除「待確認」標記。
 3. 地圖：目前 `contact.mapUrl` 搜尋「高雄大立百貨」，`mapLink` 為可見的「在 Google 地圖開啟」備援連結，兩者 query 都需 URL 編碼。地圖只標示附近地標，非門市精確位置。取得真實地址後同步更新兩個網址、HTML iframe `src`、備援連結與提示文字，保留未確認前的 TODO。
 4. Facebook：目前 `facebook: null`，不顯示連結。取得有效官方網址後填入設定，並在 `index.html` 的 `<!-- TODO: FB 粉專網址 -->` 處加入使用 `data-contact="facebook"` 的聯絡圖塊；不要以猜測網址取代。
-5. 正式網址：將 `contact.siteUrl` 設成網站完整 HTTPS 根網址（含子目錄時，結尾要有 `/`），即可產生 canonical、og:url、完整 og:image 與 JSON-LD url。正式上線前也應將這些標籤直接寫入 `index.html` 的 TODO 處，讓不執行 JavaScript 的社群爬蟲讀取；避免同時保留重複標籤。OG 圖片使用真實案例 `assets/cases/case01.jpg`，分享前確認圖片授權及網址可公開讀取。
-6. JSON-LD 由 `main.js` 以資料設定產生 BeautySalon，僅已知名稱、區域與社群；未加入未知電話、時間、價格或假網址。
+5. 正式網址：`contact.siteUrl` 是含結尾 `/` 的完整網址。變更網域時也須同步首頁 canonical、og:url、OG/Twitter 圖片絕對網址、robots.txt 與 sitemap.xml。
+6. JSON-LD 由 `node tools/build.mjs` 靜態產生於 index.html，包含 BeautySalon／LocalBusiness、FAQPage、WebSite。服務與 FAQ 對應 data.js，僅修眉提供已確認的 TWD 150。沒有 Person、電話、完整街道地址、營業時間或評論／評分資料。
 
 ## 預約流程與隱私
 
@@ -61,4 +61,24 @@ node --test tests/booking.test.mjs
 
 ## 檔案
 
-`index.html`（頁面）／`css/style.css`（樣式）／`js/data.js`（資料）／`js/main.js`（互動與純函式）／`favicon.svg`（TB 圖示）／`tests/booking.test.mjs`（測試）／`DESIGN.md`（品牌設計規範）。原始品牌板與九張案例皆保留於 `assets/`。
+`index.html`（頁面）／`css/style.css`（樣式）／`js/data.js`（資料）／`js/main.js`（互動與純函式）／`favicon.svg`（TB 圖示）／`tests/booking.test.mjs`（測試）／`DESIGN.md`（品牌設計規範）。九張案例 JPEG 原圖保留於 `assets/cases/` 作為備援與燈箱來源；品牌板與老師原圖改存 `_design/`。
+
+## SEO 與圖片／字型維護
+
+- 執行 `node tools/build.mjs` 產生靜態結構化資料與 Google Fonts 用字子集；無 npm 依賴。修改 HTML、CSS 或 js/data.js、js/main.js 後重跑，測試會檢查用字是否齊全。
+- 字型仍為 Noto Serif TC／Noto Sans TC 400、500 與 Allura；preload stylesheet、display=swap 與系統字型備援讓文字先出現。子集涵蓋本站固定文案、互動訊息及 ASCII；使用者輸入子集外的姓名字元由系統字型顯示。
+- `node tools/images.cjs` 使用已安裝 Chromium 產生 320px 與原尺寸 WebP（品質 78）。原圖有 360／361／640px 寬，不放大低解析來源；維持原長寬比例與頁面方形裁切。
+- `node tools/og/render.cjs` 仍可重製 OG 圖，來源已改為 `_design/teacher-original.jpg`。
+- `node --test tests/*.test.mjs` 驗證預約、內容、JSON-LD、FAQ、字型覆蓋與 hero preload。
+- `node tools/verify.cjs after` 啟動暫時本機 server、Chromium，保存 390／1280 截圖與 mobile Lighthouse；`node tools/verify.cjs after --qa` 驗證預約與 LINE URL，攔截外部 LINE 開啟，沒有傳送訊息。驗證工具使用本機已確認的 Chromium／Playwright／Lighthouse 絕對路徑，換電腦須調整。
+
+## 發布檔案與本輪移動清單
+
+GitHub Pages 的 Jekyll 排除設定已放在 `_config.yml`。其他靜態上傳方式請只發布 index.html、favicon.svg、robots.txt、sitemap.xml、css/、js/、assets/，不要上傳 _design/、_screens/、tools/、tests/。只移動到 _design 並不能阻止會照單上傳所有檔案的部署工具。
+
+下次部署須刪除舊公開路徑，原檔已保留：
+
+- `assets/ref/brand-board.jpg` → `_design/ref/brand-board.jpg`
+- `assets/teacher-original.jpg` → `_design/teacher-original.jpg`
+
+robots.txt 按要求放在專案根目錄；GitHub Pages 專案子路徑的 robots.txt 不會取代網域根目錄 /robots.txt，搜尋引擎以網域根目錄規則為準。sitemap.xml 可直接提交完整網址。

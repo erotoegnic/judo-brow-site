@@ -88,23 +88,6 @@
   $('#rules-status').hidden = !data.contact.rulesPending;
   $('#year').textContent = new Date().getFullYear();
 
-  const schema = {
-    '@context': 'https://schema.org', '@type': 'BeautySalon', name: data.contact.name,
-    alternateName: data.contact.englishName,
-    address: { '@type': 'PostalAddress', addressLocality: '前金區', addressRegion: '高雄市', addressCountry: 'TW' },
-    areaServed: '高雄市前金區', sameAs: [data.contact.instagram, data.contact.tiktok, data.contact.threads]
-  };
-  if (data.contact.siteUrl) {
-    schema.url = data.contact.siteUrl;
-    const canonical = document.createElement('link');
-    canonical.rel = 'canonical'; canonical.href = data.contact.siteUrl; document.head.append(canonical);
-    const ogUrl = document.createElement('meta');
-    ogUrl.setAttribute('property', 'og:url'); ogUrl.content = data.contact.siteUrl; document.head.append(ogUrl);
-    $('meta[property="og:image"]').content = new URL('assets/cases/case01.jpg', data.contact.siteUrl).href;
-  }
-  const schemaScript = document.createElement('script');
-  schemaScript.type = 'application/ld+json'; schemaScript.textContent = JSON.stringify(schema); document.head.append(schemaScript);
-
   $('#service-list').innerHTML = data.services.map(service => `<article class="service-card"><span class="service-icon">${icon(service.category)}</span><h3>${escapeHTML(service.name)}</h3><p>${escapeHTML(service.description)}</p><p class="service-price">${escapeHTML(service.price === null ? '價格請洽官方 LINE' : service.price)}</p>${service.priceNote ? `<p class="price-note">${escapeHTML(service.priceNote)}</p>` : ''}<a href="#booking" class="text-link" data-service="${escapeHTML(service.id)}" aria-label="預約這項：${escapeHTML(service.name)}">預約這項 <span aria-hidden="true">↗</span></a></article>`).join('');
   const serviceSelect = $('#service');
   data.services.forEach(service => {
@@ -150,7 +133,7 @@
   const lightbox = $('#lightbox');
   const caseUrl = item => new URL(item.path + '/', data.contact.instagram).href;
   function renderCases() {
-    $('#case-list').innerHTML = visibleCases.map(item => `<article class="case-card"><a class="case-photo" href="${escapeHTML(caseUrl(item))}" data-case="${item.id}" aria-label="放大檢視：${escapeHTML(item.title)}" aria-haspopup="dialog"><img src="${item.image}" alt="${escapeHTML(item.alt)}" width="640" height="640" loading="lazy" decoding="async"></a><h3><a href="${escapeHTML(caseUrl(item))}" target="_blank" rel="noopener noreferrer">${escapeHTML(item.title)}</a></h3><small>${item.tags.map(tag => tag === 'brow' ? 'BROW' : 'LIP').join(' · ')}</small></article>`).join('') || '<p>目前沒有此分類的作品。</p>';
+    $('#case-list').innerHTML = visibleCases.map(item => `<article class="case-card"><a class="case-photo" href="${escapeHTML(caseUrl(item))}" data-case="${item.id}" aria-label="放大檢視：${escapeHTML(item.title)}" aria-haspopup="dialog"><picture><source type="image/webp" srcset="${item.image.replace('.jpg', '-320.webp')} 320w, ${item.image.replace('.jpg', '.webp')} ${item.width}w" sizes="(min-width:1168px) 363px, (min-width:768px) calc((100vw - 80px) / 3), calc((100vw - 64px) / 2)"><img src="${item.image}" alt="${escapeHTML(item.alt)}" width="${item.width}" height="${item.height}" loading="lazy" decoding="async"></picture></a><h3><a href="${escapeHTML(caseUrl(item))}" target="_blank" rel="noopener noreferrer">${escapeHTML(item.title)}</a></h3><small>${item.tags.map(tag => tag === 'brow' ? 'BROW' : 'LIP').join(' · ')}</small></article>`).join('') || '<p>目前沒有此分類的作品。</p>';
     $('#gallery-status').textContent = `顯示 ${visibleCases.length} 件作品`;
   }
   function showCase() {
