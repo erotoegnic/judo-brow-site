@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import vm from 'node:vm';
+import { createHash } from 'node:crypto';
 import { serifSubsets } from '../tools/font-subset.mjs';
 
 const root = new URL('../', import.meta.url);
@@ -75,20 +76,26 @@ test('hero preload candidates match picture and scripts remain deferred', () => 
   assert.ok(!html.includes('teacher-original.jpg'));
 });
 
-test('serif subsets match styled content and no sans webfont is downloaded', () => {
-  const links = [...html.matchAll(/<link rel="preload" as="style" href="([^"]+)"/g)].map(match => new URL(match[1].replaceAll('&amp;', '&')));
-  assert.equal(links.length, 3);
-  for (const url of links) assert.equal(url.searchParams.get('display'), 'swap');
-  const main = readFileSync(new URL('js/main.js', root), 'utf8');
-  const subsets = serifSubsets(html, data, main);
-  for (const [weight, text] of Object.entries(subsets)) {
-    const font = links.find(url => url.searchParams.get('family') === `Noto Serif TC:wght@${weight}`);
-    assert.ok(font, `Missing serif weight ${weight}`);
-    assert.equal(font.searchParams.get('text'), text, 'Run node tools/build.mjs');
-    assert.ok(text.includes(' '), 'Space preserves font baseline metrics');
+test('self-hosted fonts match current subsets, hashes and local face declarations', () => {
+  const fonts = JSON.parse(readFileSync(new URL('assets/fonts/manifest.json', root), 'utf8'));
+  assert.equal(fonts.length, 3);
+  const subsets = serifSubsets(html, data, readFileSync(new URL('js/main.js', root), 'utf8'));
+  for (const font of fonts) {
+    assert.equal(font.text, font.family === 'Allura' ? 'Taiwan B.Cart' : subsets[font.weight]);
+    const bytes = readFileSync(new URL('assets/fonts/' + font.file, root));
+    assert.equal(bytes.subarray(0, 4).toString(), 'wOF2');
+    assert.equal(bytes.length, font.bytes);
+    assert.equal(createHash('sha256').update(bytes).digest('hex'), font.sha256);
+    assert.ok(html.includes("font-family:'" + font.family + "';font-style:normal;font-weight:" + font.weight + ";font-display:swap;src:url('assets/fonts/" + font.file + "') format('woff2')"));
   }
-  assert.ok(links.every(url => !url.href.includes('Sans')));
-  assert.equal(links.find(url => url.searchParams.get('family') === 'Allura').searchParams.get('text'), 'Taiwan B.Cart');
+  assert.ok(!/fonts.(googleapis|gstatic).com/.test(html));
+  const preloads = [...html.matchAll(/<link rel="preload" as="font"[^>]+>/g)].map(match => match[0]);
+  assert.equal(preloads.length, 2);
+  for (const preload of preloads) {
+    assert.ok(preload.includes('type="font/woff2"'));
+    assert.match(preload, /crossorigin/);
+    assert.match(preload, /noto-serif-tc-(400|500).subset.woff2/);
+  }
 });
 
 test('serif extraction follows data changes without including body copy', () => {

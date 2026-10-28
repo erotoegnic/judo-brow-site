@@ -1,6 +1,6 @@
 # 橘豆Judo｜半永久美學
 
-純 HTML、CSS、JavaScript 單頁預約網站，無後端、前端無套件依賴。直接開啟 `index.html` 即可使用。Google Fonts 與 Google 地圖需網路，離線時使用系統字型。正式網址設定為 https://erotoegnic.github.io/judo-brow-site/；本次只修改本機檔案，未部署。
+純 HTML、CSS、JavaScript 單頁預約網站，無後端、前端無套件依賴。直接開啟 `index.html` 即可使用。字型已放在 assets/fonts/，網站訪客不需連線 Google Fonts；Google 地圖仍需網路。請透過本機 HTTP server 預覽完整字型，直接 file:// 開啟時 Chromium 會阻擋本機字型並使用系統備援。正式網址設定為 https://erotoegnic.github.io/judo-brow-site/；本次只修改本機檔案，未部署。
 
 ## 本機預覽與測試
 
@@ -65,7 +65,7 @@ node --test tests/booking.test.mjs
 
 ## SEO 與圖片／字型維護
 
-- 執行 `node tools/build.mjs` 產生靜態結構化資料與 Google Fonts 用字子集；無 npm 依賴。修改 HTML、CSS 或 js/data.js、js/main.js 後重跑，測試會檢查子集 URL 與原始內容是否同步。tools/font-subset.mjs 的元素清單對應 style.css 襯線選擇器；新增襯線元件時須一併更新此清單。瀏覽器 QA 依實際 computed style 檢查用字，包括剪貼簿拒絕後的確認標題。
+- 執行 `node tools/build.mjs` 產生靜態結構化資料與自託管 WOFF2 字型子集；無 npm 依賴（Node 18+）。修改 HTML、CSS 或 js/data.js、js/main.js 後重跑，測試會檢查子集 URL 與原始內容是否同步。tools/font-subset.mjs 的元素清單對應 style.css 襯線選擇器；新增襯線元件時須一併更新此清單。瀏覽器 QA 依實際 computed style 檢查用字，包括剪貼簿拒絕後的確認標題。
 - 內文／表單使用系統 sans，不下載 Noto Sans TC。Noto Serif TC 保留 400（品牌副標、引言、FAQ）與 500（標題），依實際襯線元素分字重收錄；Allura 只含 Taiwan B.Cart。保持 display=swap 與系統備援。
 - `node tools/images.cjs` 使用已安裝 Chromium 產生 320px 與原尺寸 WebP（品質 78）。原圖有 360／361／640px 寬，不放大低解析來源；維持原長寬比例與頁面方形裁切。
 - `node tools/og/render.cjs` 仍可重製 OG 圖，來源已改為 `_design/teacher-original.jpg`。
@@ -90,3 +90,13 @@ robots.txt 按要求放在專案根目錄；GitHub Pages 專案子路徑的 robo
 - 本機 Lighthouse 98／100／100／100，FCP／LCP 約 1.9 秒；不是線上分數，也不代表 GitHub Pages 已達90。
 - 畫面比較：node tools/compare.cjs fonts-before fonts-after；產物 _screens/hero-comparison-fonts-after.json。
 - 未執行 git 或部署。部署後仍需以相同線上 mobile Lighthouse 設定驗證。
+
+### 自託管字型（目前使用）
+
+執行 `node tools/build.mjs`。首次執行或襯線用字改變時，工具會連線 Google Fonts 取得相同 text= 子集 WOFF2，保存到 assets/fonts/；不變的子集透過 manifest SHA-256 驗證後重用，可離線重建。`node tools/build.mjs --refresh-fonts` 可強制重新下載。下載失敗會讓建置失敗，不寫入新的首頁。不要手改 manifest 或 WOFF2。
+
+固定檔名為 noto-serif-tc-400.subset.woff2、noto-serif-tc-500.subset.woff2、allura.subset.woff2；部署時須連同 index.html 及 assets/fonts/ 更新，避免新版文案配到舊子集。manifest 記錄每個字重的用字、來源網址、檔案大小與 SHA-256；OFL 授權隨字型保留。
+
+首頁內嵌 @font-face（font-display: swap），只預載 hero 使用的 Serif 400 與 500。Allura 按 CSS 使用載入，不預載。首頁沒有 Google Fonts preconnect、CSS 或 WOFF2 外部請求。檔案大小：400=31,016 bytes、500=40,696 bytes、Allura=3,312 bytes，合計75,024 bytes。
+
+驗證：`node --test tests/*.test.mjs`、`node tools/verify.cjs hosted-after --qa`、`node tools/compare.cjs hosted-before hosted-after`。390與1280 hero前後像素相同；本輪未git、未部署。

@@ -4,8 +4,15 @@ module.exports = async function runBrowserQA(browser, url) {
   const page = await browser.newPage();
   const errors = [];
   const consoleErrors = [];
+  const fileFontFailures = [];
+  page.on('requestfailed', request => {
+    if (request.url().startsWith('file:') && request.resourceType() === 'font') fileFontFailures.push(request.url());
+  });
+  const fileConsoleErrors = [];
   page.on('pageerror', error => errors.push(error.message));
-  page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()); });
+  page.on('console', message => {
+    if (message.type() === 'error') (page.url().startsWith('file:') ? fileConsoleErrors : consoleErrors).push(message.text());
+  });
   await page.addInitScript(() => { window.open = url => { window.lastOpenedURL = url; return null; }; });
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.evaluate(() => document.fonts.ready);
@@ -34,10 +41,8 @@ module.exports = async function runBrowserQA(browser, url) {
   assert.deepEqual(await page.locator('#faq details').evaluateAll(items => items.map(item => ({ question: item.querySelector('summary').textContent, answer: item.querySelector('p').textContent }))), content.faq);
   assert.equal(await page.locator('h1').textContent(), '橘豆Judo｜高雄前金區半永久紋繡');
   async function assertSerifCoverage() {
-  const missingSerif = await page.evaluate(() => {
-    const subsets = new Map([...document.querySelectorAll('link[as="style"]')].map(link => new URL(link.href))
-      .filter(url => url.searchParams.get('family')?.startsWith('Noto Serif TC:'))
-      .map(url => [url.searchParams.get('family').split('@')[1], new Set(url.searchParams.get('text'))]));
+  const missingSerif = await page.evaluate(fontManifest => {
+    const subsets = new Map(fontManifest.filter(font => font.family === 'Noto Serif TC').map(font => [String(font.weight), new Set(font.text)]));
     const missing = [];
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     while (walker.nextNode()) {
@@ -50,10 +55,13 @@ module.exports = async function runBrowserQA(browser, url) {
       for (const character of node.textContent) if (!/\s/u.test(character) && !subset?.has(character)) missing.push({ text: node.textContent, character, weight: style.fontWeight });
     }
     return missing;
-  });
+  }, JSON.parse(fs.readFileSync('assets/fonts/manifest.json', 'utf8')));
   assert.deepEqual(missingSerif, [], 'Every actually serif-styled text node must be covered');
   }
   await assertSerifCoverage();
+  const fontRequests = await page.evaluate(() => performance.getEntriesByType('resource').filter(entry => /woff2|fonts.(googleapis|gstatic).com/.test(entry.name)).map(entry => entry.name));
+  assert.equal(fontRequests.length, 3);
+  assert.ok(fontRequests.every(request => request.startsWith(url + 'assets/fonts/')));
   const heroRequests = await page.evaluate(() => ({
     current: document.querySelector('.teacher-portrait img').currentSrc,
     requests: performance.getEntriesByType('resource').filter(entry => /\/assets\/teacher(?:-600)?\.(?:webp|jpg)$/.test(entry.name)).map(entry => entry.name),
@@ -186,6 +194,11 @@ module.exports = async function runBrowserQA(browser, url) {
   await optionalVideos.close();
   assert.deepEqual(errors, []);
   assert.deepEqual(consoleErrors, []);
+  for (const error of fileConsoleErrors) {
+    assert.ok(error === 'Failed to load resource: net::ERR_FAILED' || (error.includes('blocked by CORS policy') && fileFontFailures.some(url => error.includes(url))), error);
+  }
+  assert.equal(fileConsoleErrors.filter(error => error === 'Failed to load resource: net::ERR_FAILED').length, fileFontFailures.length);
+  fs.writeFileSync('_screens/file-preview-fonts.json', JSON.stringify({ fileFontFailures, fileConsoleErrors, note: 'Chromium blocks local file font fetches; HTTP preview uses all three local fonts with zero console errors. File booking flow still passes.' }, null, 2));
   fs.writeFileSync('_screens/seo-qa-qa-result.json', JSON.stringify({ round: 2, status: 'PASS', viewports: [390, 768, 1280], scenarios: ['responsive overflow', 'owner notices exact text', '11 services and sole confirmed price', 'real quotes and attribution', 'five video links and optional empty row', 'Threads schema and footer', 'Dali map loaded and fallback', 'menu and Escape', 'filters', 'lightbox next previous Escape focus restoration', 'FAQ', 'service preselection', 'required fields and focus', 'past date rejected', 'required notice checkbox and focus', 'notice anchor preserves fields', 'multiple health values and empty health', 'valid message and URL', 'copy allowed', 'copy denied and fallback denied', 'edit preserves all values', 'file protocol booking', 'no-JS fallback'], pageErrors: errors, consoleErrors, externalLineNavigation: 'intercepted; no message sent' }, null, 2));
   console.log('Browser QA PASS');
 };

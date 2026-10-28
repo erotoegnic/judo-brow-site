@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { serifSubsets } from './font-subset.mjs';
+import { hostFonts } from './host-fonts.mjs';
 
 const root = new URL('../', import.meta.url);
 const read = file => readFileSync(new URL(file, root), 'utf8');
@@ -42,13 +43,14 @@ html = html.replace(/^[ \t]*<script type="application\/ld\+json">[\s\S]*?<\/scri
 html = html.replace('</head>', `  ${schema}\n</head>`);
 
 const subsets = serifSubsets(html, data, read('js/main.js'));
-const noto = Object.entries(subsets).map(([weight, text]) => `https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@${weight}&display=swap&text=${encodeURIComponent(text)}`);
-const script = `https://fonts.googleapis.com/css2?family=Allura&display=swap&text=${encodeURIComponent('Taiwan B.Cart')}`;
-const links = [...noto, script].map(url => {
-  const escaped = url.replaceAll('&', '&amp;');
-  return `  <link rel="preload" as="style" href="${escaped}" onload="this.onload=null;this.rel='stylesheet'">\n  <noscript><link rel="stylesheet" href="${escaped}"></noscript>`;
-}).join('\n');
+const fonts = await hostFonts(root, subsets, process.argv.includes('--refresh-fonts'));
+const links = fonts.filter(font => font.family === 'Noto Serif TC').map(font => `  <link rel="preload" as="font" type="font/woff2" href="assets/fonts/${font.file}" crossorigin>`).join('\n');
 html = html.replace(/<!-- FONT_LINKS_START -->[\s\S]*?<!-- FONT_LINKS_END -->/, `<!-- FONT_LINKS_START -->\n${links}\n  <!-- FONT_LINKS_END -->`);
+html = html.replace(/^[ \t]*<link[^>]+href="https:\/\/fonts\.(?:googleapis|gstatic)\.com"[^>]*>\r?\n/gm, '');
+const faces = `<style id="font-faces">${fonts.map(font => `@font-face{font-family:'${font.family}';font-style:normal;font-weight:${font.weight};font-display:swap;src:url('assets/fonts/${font.file}') format('woff2')}`).join('\n')}</style>`;
+html = html.includes('<style id="font-faces">')
+  ? html.replace(/<style id="font-faces">[\s\S]*?<\/style>/, faces)
+  : html.replace('<!-- SITE_CSS_START -->', `${faces}\n  <!-- SITE_CSS_START -->`);
 const styles = `<!-- SITE_CSS_START -->\n  <style id="site-css">${read('css/style.css').trim()}</style>\n  <!-- SITE_CSS_END -->`;
 html = html.includes('<!-- SITE_CSS_START -->')
   ? html.replace(/<!-- SITE_CSS_START -->[\s\S]*?<!-- SITE_CSS_END -->/, styles)
